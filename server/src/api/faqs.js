@@ -1,6 +1,7 @@
 const express = require('express');
 const monk = require('monk');
 const Joi = require('@hapi/joi');
+const { json } = require('express');
 
 // connect to mongodb
 const db = monk(process.env.MONGO_URI);
@@ -26,10 +27,19 @@ router.get('/', async (req, res, next) => {
 });
 
 // Read One
-router.get('/:id', (req, res, next) => {
-    res.json({
-        message: "Hello Read One"
-    })
+router.get('/:id', async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const item = await faqs.findOne({
+            _id: id,
+        });
+        if (!item) {
+            return next();
+        }
+        return res.json(item);
+    } catch (error) {
+        next(error);
+    }
 });
 
 // Create One
@@ -44,17 +54,40 @@ router.post('/', async (req, res, next) => {
 });
 
 // Update One
-router.put('/:id', (req, res, next) => {
-    res.json({
-        message: "Hello Update One"
-    })
+router.put('/:id', async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const item = await faqs.findOne({
+            _id: id,
+        });
+        if (!item) return next();
+
+        const value = await schema.validateAsync(req.body);
+
+        await faqs.update({
+            _id: id,
+        },{
+            $set: value
+        });
+        res.json(value);
+    } catch (error) {
+        next(error);
+    }
 });
 
 // Delete One
-router.delete('/:id', (req, res, next) => {
-    res.json({
-        message: "Hello Delete One"
-    })
+router.delete('/:id', async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        await faqs.remove({
+            _id: id
+        });
+        res.json({
+            message: "success deleted."
+        });
+    } catch (error) {
+        next(error);
+    }
 });
 
 module.exports = router;
